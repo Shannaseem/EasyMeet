@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EasyMeet - Anonymous Video Call</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h2>EasyMeet: Anonymous Video Call</h2>
+    <div class="inputs">
+        <input id="myId" placeholder="Your ID (e.g. user1)">
+        <input id="otherId" placeholder="Other User's ID (e.g. user2)">
+        <button onclick="startCall()">Start</button>
+    </div>
+    <div class="videos">
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay></video>
+    </div>
+    <script src="js/app.js"></script>
+</body>
+</html>
