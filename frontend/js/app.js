@@ -65,13 +65,21 @@ function addRemoteVideo(userId) {
     label.className = 'label';
     label.textContent = userId === myId ? 'You' : userId;
 
-    // Mute/camera status indicators
+    // Status indicators (mute, camera off)
     const statusDiv = document.createElement('div');
     statusDiv.className = 'status-indicators';
     statusDiv.id = `status-indicators-${userId}`;
     statusDiv.style.marginTop = '6px';
 
+    // Camera off placeholder
+    const cameraOffLabel = document.createElement('div');
+    cameraOffLabel.className = 'camera-off-label';
+    cameraOffLabel.id = `camera-off-${userId}`;
+    cameraOffLabel.textContent = `Camera Off by ${userId}`;
+    cameraOffLabel.style.display = 'none';
+
     videoContainer.appendChild(video);
+    videoContainer.appendChild(cameraOffLabel);
     videoContainer.appendChild(label);
     videoContainer.appendChild(statusDiv);
 
@@ -80,45 +88,62 @@ function addRemoteVideo(userId) {
     } else {
         main.appendChild(videoContainer);
     }
+
+    // Apply existing status if available
+    if (remoteStatus[userId]) {
+        updateRemoteStatusIndicators(userId);
+    }
 }
 
 function updateRemoteStatusIndicators(userId) {
     const status = remoteStatus[userId] || {};
     const statusDiv = document.getElementById(`status-indicators-${userId}`);
-    if (!statusDiv) return;
+    const cameraOffLabel = document.getElementById(`camera-off-${userId}`);
+    const video = document.getElementById(userId === myId ? 'localVideo' : `remoteVideo-${userId}`);
+    
+    if (!statusDiv || !cameraOffLabel || !video) {
+        console.warn(`Failed to update status for ${userId}: elements missing`);
+        return;
+    }
+
+    // Update camera off label text (in case userId changes)
+    cameraOffLabel.textContent = `Camera Off by ${userId}`;
+
+    // Clear existing indicators
     statusDiv.innerHTML = '';
+
+    // Update mute status
     if (status.muted) {
         const muteSpan = document.createElement('span');
-        muteSpan.textContent = '🔇';
-        muteSpan.title = 'Muted';
-        muteSpan.style.marginRight = '8px';
+        muteSpan.className = 'muted-label';
+        muteSpan.textContent = `Muted by ${userId}`;
         statusDiv.appendChild(muteSpan);
     }
+
+    // Update camera off status
     if (status.cameraOff) {
-        const camSpan = document.createElement('span');
-        camSpan.textContent = '📷🚫';
-        camSpan.title = 'Camera Off';
-        statusDiv.appendChild(camSpan);
+        cameraOffLabel.style.display = 'flex';
+        video.style.display = 'none';
+    } else {
+        cameraOffLabel.style.display = 'none';
+        video.style.display = '';
     }
 }
 
 function resetUI() {
     setStatus('');
-    // Remove all remote videos except local
     document.querySelectorAll('.video-container').forEach(vc => {
         if (!vc.id || vc.id === `video-box-${myId}`) return;
         vc.remove();
     });
-    // Remove all ended labels
     document.querySelectorAll('.ended-label').forEach(el => el.remove());
-    // Remove all status indicators
     document.querySelectorAll('.status-indicators').forEach(el => el.innerHTML = '');
     remoteStatus = {};
 }
 
 function startCall() {
     myId = document.getElementById('myId').value.trim();
-    roomId = document.getElementById('otherId').value.trim(); // Use as room name
+    roomId = document.getElementById('otherId').value.trim();
     if (!myId || !roomId) {
         setStatus("Please enter both your ID and the room name.");
         return;
@@ -145,11 +170,9 @@ function connectWebSocket() {
             usersInRoom = new Set(msg.users);
             console.log('Users in room:', Array.from(usersInRoom));
 
-            // For each user in the room (except myself), ensure a peer connection exists
             usersInRoom.forEach(uid => {
                 if (uid !== myId && !peers[uid]) {
                     addRemoteVideo(uid);
-                    // Only one side initiates offer to avoid double-offer
                     if (myId < uid) {
                         console.log(`Initiating offer to ${uid}`);
                         createPeerConnection(uid, true);
@@ -157,7 +180,6 @@ function connectWebSocket() {
                 }
             });
 
-            // Remove peer connections for users who have left
             prevUsers.forEach(uid => {
                 if (uid !== myId && !usersInRoom.has(uid)) {
                     console.log(`User ${uid} left, removing video`);
@@ -169,7 +191,6 @@ function connectWebSocket() {
             console.log(`Received offer from ${from}`);
             addRemoteVideo(from);
             if (peers[from]) {
-                // Handle renegotiation by updating remote description
                 console.log(`Updating existing peer connection for ${from}`);
                 await peers[from].setRemoteDescription(new RTCSessionDescription(msg.offer));
                 const answer = await peers[from].createAnswer();
@@ -179,7 +200,6 @@ function connectWebSocket() {
             } else {
                 await createPeerConnection(from, false, msg.offer);
             }
-            // Flush pending candidates
             if (pendingCandidates[from]) {
                 console.log(`Flushing ${pendingCandidates[from].length} pending candidates for ${from}`);
                 for (const candidate of pendingCandidates[from]) {
@@ -192,7 +212,6 @@ function connectWebSocket() {
             if (peers[from]) {
                 console.log(`Setting remote answer from ${from}`);
                 await peers[from].setRemoteDescription(new RTCSessionDescription(msg.answer));
-                // Flush pending candidates
                 if (pendingCandidates[from]) {
                     console.log(`Flushing ${pendingCandidates[from].length} pending candidates for ${from}`);
                     for (const candidate of pendingCandidates[from]) {
@@ -218,15 +237,11 @@ function connectWebSocket() {
             showCallEnded(msg.endedBy);
             removeRemoteVideo(msg.endedBy);
         } else if (msg.type === "status") {
-            console.log(`Status update from ${msg.from}:`, msg);
+            console.log(`Status update from ${msg.from}: muted=${msg.muted}, cameraOff=${msg.cameraOff}`);
             if (!remoteStatus[msg.from]) remoteStatus[msg.from] = {};
-            if ('muted' in msg) remoteStatus[msg.from].muted = msg.muted;
-            if ('cameraOff' in msg) remoteStatus[msg.from].cameraOff = msg.cameraOff;
+            remoteStatus[msg.from].muted = msg.muted !== undefined ? msg.muted : false;
+            remoteStatus[msg.from].cameraOff = msg.cameraOff !== undefined ? msg.cameraOff : false;
             updateRemoteStatusIndicators(msg.from);
-            const video = document.getElementById(`remoteVideo-${msg.from}`);
-            if (video) {
-                video.style.display = msg.cameraOff ? 'none' : '';
-            }
         }
     };
 
@@ -244,7 +259,6 @@ async function setupMediaAndAnnounce() {
     try {
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         console.log('Local stream acquired:', localStream);
-        // Add local video
         let localBox = document.getElementById(`video-box-${myId}`);
         if (!localBox) {
             addRemoteVideo(myId);
@@ -254,11 +268,9 @@ async function setupMediaAndAnnounce() {
             video.srcObject = localStream;
             video.play().catch(err => console.warn("Local video autoplay blocked:", err));
         }
-        // Announce presence to server
         ws.send(JSON.stringify({type: "join", user: myId}));
         console.log('Sent join message for', myId);
 
-        // Add tracks to existing peer connections without forcing renegotiation
         Object.keys(peers).forEach(userId => {
             const peer = peers[userId];
             if (localStream && typeof localStream.getTracks === 'function') {
@@ -270,7 +282,6 @@ async function setupMediaAndAnnounce() {
                         tracksAdded = true;
                     }
                 });
-                // Only trigger renegotiation if new tracks were added and signaling state is stable
                 if (tracksAdded && peer.signalingState === 'stable') {
                     console.log(`Triggering renegotiation for ${userId} due to new tracks`);
                     peer.createOffer().then(offer => {
@@ -287,6 +298,11 @@ async function setupMediaAndAnnounce() {
                 }
             }
         });
+
+        // Broadcast initial status
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({type: "status", from: myId, muted: localMuted, cameraOff: localCameraOff}));
+        }
     } catch (err) {
         setStatus("Could not access camera/microphone. Please allow permissions.");
         console.error('Media setup error:', err);
@@ -307,7 +323,6 @@ function createPeerConnection(userId, initiator, remoteOffer = null) {
     peers[userId] = peer;
     console.log(`Created peer connection for ${userId}, initiator: ${initiator}`);
 
-    // Add local tracks if available
     if (localStream && typeof localStream.getTracks === 'function') {
         localStream.getTracks().forEach(track => {
             console.log(`Adding local track to ${userId}:`, track);
@@ -344,7 +359,6 @@ function createPeerConnection(userId, initiator, remoteOffer = null) {
         }
     };
 
-    // Handle offer/answer exchange
     if (initiator) {
         peer.createOffer().then(offer => {
             return peer.setLocalDescription(offer);
@@ -355,7 +369,6 @@ function createPeerConnection(userId, initiator, remoteOffer = null) {
     } else if (remoteOffer) {
         peer.setRemoteDescription(new RTCSessionDescription(remoteOffer)).then(() => {
             console.log(`Set remote offer from ${userId}, creating answer`);
-            // Add local tracks before creating answer
             if (localStream && typeof localStream.getTracks === 'function') {
                 localStream.getTracks().forEach(track => {
                     if (!peer.getSenders().some(sender => sender.track && sender.track.id === track.id)) {
@@ -403,7 +416,7 @@ function toggleMute() {
     });
     document.getElementById('muteIcon').textContent = localMuted ? '🔇' : '🔊';
     if (ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({type: "status", from: myId, muted: localMuted}));
+        ws.send(JSON.stringify({type: "status", from: myId, muted: localMuted, cameraOff: localCameraOff}));
     }
     if (!remoteStatus[myId]) remoteStatus[myId] = {};
     remoteStatus[myId].muted = localMuted;
@@ -418,11 +431,18 @@ function toggleCamera() {
     });
     document.getElementById('camIcon').textContent = localCameraOff ? '📷🚫' : '🎥';
     const video = document.getElementById('localVideo');
-    if (video) {
-        video.style.display = localCameraOff ? 'none' : '';
+    const cameraOffLabel = document.getElementById(`camera-off-${myId}`);
+    if (video && cameraOffLabel) {
+        if (localCameraOff) {
+            video.style.display = 'none';
+            cameraOffLabel.style.display = 'flex';
+        } else {
+            video.style.display = '';
+            cameraOffLabel.style.display = 'none';
+        }
     }
     if (ws && ws.readyState === 1) {
-        ws.send(JSON.stringify({type: "status", from: myId, cameraOff: localCameraOff}));
+        ws.send(JSON.stringify({type: "status", from: myId, muted: localMuted, cameraOff: localCameraOff}));
     }
     if (!remoteStatus[myId]) remoteStatus[myId] = {};
     remoteStatus[myId].cameraOff = localCameraOff;

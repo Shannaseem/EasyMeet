@@ -1,3 +1,4 @@
+
 body, html {
     height: 100%;
     margin: 0;
@@ -87,6 +88,37 @@ video {
     padding: 2px 14px;
     border-radius: 8px;
     font-size: 1rem;
+}
+
+/* Camera off label */
+.camera-off-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(40,60,120,0.85);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.4rem;
+    padding: 12px 24px;
+    border-radius: 12px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 260px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Muted label */
+.muted-label {
+    background: rgba(255,88,88,0.85);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 6px 16px;
+    border-radius: 10px;
+    display: inline-block;
 }
 
 /* Inputs */
@@ -196,17 +228,7 @@ video {
     text-align: center;
     transition: opacity 0.3s;
 }
-.muted-label {
-    margin-top: 6px;
-    color: #fff;
-    background: #ff5858cc;
-    border-radius: 8px;
-    padding: 2px 12px;
-    font-size: 1rem;
-    font-weight: 700;
-    display: inline-block;
-    letter-spacing: 1px;
-}
+
 .ended-label {
     margin-top: 6px;
     color: #fff;
@@ -217,5 +239,4 @@ video {
     font-weight: 700;
     display: inline-block;
     letter-spacing: 1px;
-    background: #222c;
 }
