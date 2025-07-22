@@ -2,20 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EasyMeet - Anonymous Video Call</title>
+    <title>EasyMeet - Video Call</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico">
 </head>
 <body>
-    <h2>EasyMeet: Anonymous Video Call</h2>
-    <div class="inputs">
+    <div class="background">
+        <div class="bubbles"></div>
+    </div>
+    <header>
+        <h1>EasyMeet</h1>
+    </header>
+    <main>
+        <!-- Video panels will be added here dynamically by JS -->
+    </main>
+    <div class="inputs glass">
         <input id="myId" placeholder="Your ID (e.g. user1)">
-        <input id="otherId" placeholder="Other User's ID (e.g. user2)">
-        <button onclick="startCall()">Start</button>
+        <input id="otherId" placeholder="Room Name (e.g. room1)">
+        <button id="startBtn">Start</button>
     </div>
-    <div class="videos">
-        <video id="localVideo" autoplay muted></video>
-        <video id="remoteVideo" autoplay></video>
+    <div class="controls glass">
+        <button class="control-btn" title="Mute" onclick="toggleMute()"><span id="muteIcon">🔊</span></button>
+        <button class="control-btn end" title="End Call" onclick="endCall()"><span>⏹️</span></button>
+        <button class="control-btn" title="Camera" onclick="toggleCamera()"><span id="camIcon">🎥</span></button>
     </div>
+    <div id="statusMsg" class="status-msg"></div>
+    <span id="callEndedLabel" class="ended-label" style="display:none;">Call Ended</span>
     <script src="js/app.js"></script>
 </body>
 </html>

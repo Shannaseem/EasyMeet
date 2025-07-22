@@ -1,10 +1,9 @@
 # signaling_server.py
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import json
 
 app = FastAPI()
-
-# Allow all origins for local development (restrict in production)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,20 +12,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-active_connections = {}
+rooms = {}  # {room_id: {user_id: websocket}}
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
+@app.websocket("/ws/{room_id}_{user_id}")
+async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
     await websocket.accept()
-    active_connections[client_id] = websocket
+    if room_id not in rooms:
+        rooms[room_id] = {}
+    rooms[room_id][user_id] = websocket
+
+    # Notify all users in the room about the new user list
+    users = list(rooms[room_id].keys())
+    for ws in rooms[room_id].values():
+        await ws.send_text(json.dumps({
+            "type": "users-in-room",
+            "users": users
+        }))
+
     try:
         while True:
             data = await websocket.receive_text()
-            # Data format: {"to": "other_id", ...}
-            import json
             msg = json.loads(data)
             to_id = msg.get("to")
-            if to_id in active_connections:
-                await active_connections[to_id].send_text(data)
+            # Forward signaling messages to the intended recipient
+            if to_id and to_id in rooms[room_id]:
+                await rooms[room_id][to_id].send_text(data)
     except WebSocketDisconnect:
-        del active_connections[client_id]
+        del rooms[room_id][user_id]
+        # Notify others about user leaving
+        users = list(rooms[room_id].keys())
+        for ws in rooms[room_id].values():
+            await ws.send_text(json.dumps({
+                "type": "users-in-room",
+                "users": users
+            }))
