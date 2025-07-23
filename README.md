@@ -31,11 +31,11 @@ EasyMeet is a real-time, multi-user group video calling web application built us
 
 EasyMeet/
 │
-├── backend/                # FastAPI WebSocket signaling server
-│   ├── main.py             # Main server code
+├── backend/                
+│   ├── main.py             
 │   └── ...                
 │
-├── static/                 # Frontend files
+├── static/                 
 │   ├── index.html
 │   ├── app.js
 │   └── styles.css
