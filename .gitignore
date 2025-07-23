@@ -1,0 +1,44 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# === FastAPI & General Secrets ===
+.env
+.env.*
+
+# === Logs ===
+*.log
+
+# === IDE/Editor Configs ===
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# === OS Generated Files ===
+.DS_Store
+Thumbs.db
+
+# === Node.js (if using frontend dependencies) ===
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# === Coverage / Testing ===
+htmlcov/
+.tox/
+.nox/
+coverage.*
+.cache
+pytest_cache/
+
+# === Others ===
+*.sqlite3
+*.db
+*.pid
+*.bak
