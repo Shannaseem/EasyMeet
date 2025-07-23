@@ -29,21 +29,7 @@ EasyMeet is a real-time, multi-user group video calling web application built us
 
 ## 📁 Project Structure
 
-EasyMeet/
-│
-├── backend/                
-│   ├── main.py             
-│   └── ...                
-│
-├── static/                 
-│   ├── index.html
-│   ├── app.js
-│   └── styles.css
-│
-├── .gitignore
-├── README.md
-└── requirements.txt
-
+<pre> EASYMEET/ ├── backend/ │ ├── __pycache__/ │ └── signaling_server.py ├── frontend/ │ ├── assets/ │ │ ├── css/ │ │ │ └── style.css │ │ └── js/ │ │ └── app.js │ ├── favicon.ico │ └── index.html ├── .gitignore └── README.md </pre>
 
 ## ▶️ Getting Started
 
