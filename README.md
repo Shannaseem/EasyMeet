@@ -28,7 +28,7 @@ EasyMeet is a real-time, multi-user group video calling web application built us
 
 
 ## 📁 Project Structure
-
+```
 EasyMeet/
 │
 ├── backend/                
@@ -43,7 +43,7 @@ EasyMeet/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
-
+```
 
 ## ▶️ Getting Started
 
